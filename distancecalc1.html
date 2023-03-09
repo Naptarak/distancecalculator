@@ -1,0 +1,94 @@
+<html>
+<head>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- A Leaflet könyvtár betöltése a térkép megjelenítéséhez -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+  <h1>Távolság számító</h1>
+  <p>Kattints a térképre a két hely bejelöléséhez!</p>  
+  <!-- A térkép elem létrehozása -->
+  <div id="map" style="width:600px; height:400px;"></div>  
+  <p id="result"></p>
+
+  <!-- A javascript kód a térkép inicializálásakor létrehozza a marker változókat,
+       amelyek tárolják az első és második pont koordinátáit,
+       majd a térképre kattintva frissíti ezeket az értékeket és meghívja a calculateDistance függvényt,
+       amely a Haversine formulát használja a távolság kiszámítására,
+       majd az eredményt kilométerben megjeleníti a result elemen belül -->
+  <!-- A Haversine formula forrása: https://en.wikipedia.org/wiki/Haversine_formula -->
+  <!-- A Leaflet könyvtár forrása: https://leafletjs.com/examples/quick-start/ -->
+  
+  <script>
+
+    // A függvény, amely kiszámítja a távolságot két földrajzi pont között
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      
+      // Az átlagos földi sugár kilométerben
+      var R = 6371;
+
+      // Az első és második pont szélességének és hosszúságának eltérése radiánban
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLon = (lon2 - lon1) * Math.PI / 180;
+
+      // A Haversine formula alkalmazása
+      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+      
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      
+      // A távolság kilométerben
+      var d = R * c;
+      
+      return d;
+    }
+
+    // A Leaflet könyvtár használata a térkép inicializálásához
+    var map = L.map('map').setView([47.4979,19.0402],13); // Budapestre állítva
+
+    // Az OpenStreetMap réteg hozzáadása a térképhez
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Két marker változó létrehozása az első és második pont koordinátáinak tárolására
+    var marker1 = null;
+    var marker2 = null;
+
+    // Egy eseménykezelő hozzáadása a térképhez, amely akkor fut le, ha a felhasználó kattint rá
+    map.on('click', function(e) {
+      
+      // Ha az első marker még nincs létrehozva, akkor létrehozza azt a kattintott helyen
+      if (marker1 == null) {
+        marker1 = L.marker(e.latlng).addTo(map);
+      }
+      // Ha az első marker már létezik, de a második még nem, akkor létrehozza azt a kattintott helyen
+      else if (marker2 == null) {
+        marker2 = L.marker(e.latlng).addTo(map);
+      }
+      // Ha mindkét marker már létezik, akkor törli őket és újra kezdi a folyamatot
+      else {
+        map.removeLayer(marker1);
+        map.removeLayer(marker2);
+        marker1 = L.marker(e.latlng).addTo(map);
+        marker2 = null;
+      }
+
+      // Ha mindkét marker létezik és van koordinátájuk, akkor meghívja a calculateDistance függvényt és kiírja az eredményt
+      if (marker1 != null && marker2 != null && marker1.getLatLng() != null && marker2.getLatLng() != null) {
+        
+        var lat1 = marker1.getLatLng().lat;
+        var lon1 = marker1.getLatLng().lng;
+        var lat2 = marker2.getLatLng().lat;
+        var lon2 = marker2.getLatLng().lng;
+
+        var distance = calculateDistance(lat1, lon1, lat2, lon2);
+
+        $("#result").text("A két hely közötti távolság: " + distance.toFixed(2) + " km.");
+      }
+    });
+  </script>
+</body>
+</html>
